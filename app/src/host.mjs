@@ -3,7 +3,9 @@
 // on a loopback port and reports the launch URL over IPC. With DS_BOT_CHECK, the path of a JSON list
 // of Session ids, it boots the first-run check's profile instead and reports which of them it cannot read.
 // Follows DeepSeek Harness apps/desktop-host/src/index.ts (MIT); see NOTICE.
-import { readFileSync } from 'node:fs'
+import { randomUUID } from 'node:crypto'
+import { readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { isAbsolute } from 'node:path'
 import { inspect } from 'node:util'
 import { loadLayeredEnv, reportSkippedBundles } from '@deepseek-ai/dsh-app-boot'
 import { runProfile } from '@deepseek-ai/dsh/profile-boot'
@@ -68,6 +70,26 @@ async function main() {
   const missing = ['sessionController', 'workspaceRegistry'].filter(name => ctx.get(name) === undefined)
   if (missing.length > 0) throw new Error(`The profile in ${profile.dir} did not start ${missing.join(', ')}; the engine log has the cause`)
   const url = connection.authenticatedUrl(`http://127.0.0.1:${String(webServer.port)}`)
+  const connectionFile = process.env.NEMO_DS_BOT_CONNECTION_FILE
+  if (connectionFile) {
+    if (!isAbsolute(connectionFile) || webServer.host !== '127.0.0.1')
+      throw new Error('NEMO integration needs an absolute connection path and a loopback Host')
+    const record = JSON.stringify({ pid: process.pid, url }) + '\n'
+    const temporary = `${connectionFile}.${randomUUID()}`
+    try {
+      writeFileSync(temporary, record, { flag: 'wx', mode: 0o600 })
+      renameSync(temporary, connectionFile)
+    } finally {
+      rmSync(temporary, { force: true })
+    }
+    process.once('exit', () => {
+      try {
+        if (readFileSync(connectionFile, 'utf8') === record) rmSync(connectionFile)
+      } catch {
+        // A stopped or replaced gateway needs no connection file.
+      }
+    })
+  }
   // The window is the owner's page; DSH 0.2.2 builds the injections for the Peer they serve.
   await send({ type: 'ready', url, injections: webServer.collectIndexInjections(connection.browserPeer) })
 }
