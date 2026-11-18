@@ -46025,6 +46025,11 @@ function apply(ctx) {
     surfaceMode: () => surface.getSnapshot().mode,
     setSurface: (mode) => {
       if (mode !== "bot" && mode !== "agent") return;
+      const nemoAgentUrl = roster.getSnapshot().nemoAgentUrl;
+      if (mode === "agent" && nemoAgentUrl !== void 0) {
+        window.location.assign(nemoAgentUrl);
+        return;
+      }
       if (surface.getSnapshot().mode === mode) {
         if (mode === "bot") ensureBotHome();
         return;

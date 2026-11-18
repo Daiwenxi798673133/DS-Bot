@@ -35,12 +35,24 @@ const MEMORY_LIMIT_SCOPES = new Set(['group', 'bot', 'team'])
 const MEMORY_LIMIT_MIN = 1_000
 const MEMORY_LIMIT_MAX = 200_000
 
+function classicAgentUrl(value) {
+  if (value === undefined) return undefined
+  const url = new URL(value)
+  const loopback = ['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname)
+  if (!(url.protocol === 'https:' || (loopback && url.protocol === 'http:'))
+    || url.username || url.password || url.search || url.hash || url.pathname !== '/') {
+    throw new Error('NEMO_CLASSIC_AGENT_URL must be an HTTPS origin or a loopback HTTP origin')
+  }
+  return url.href
+}
+
 export function errorCode(error) {
   if (typeof error?.code === 'string' && error.code.startsWith('bot/')) return error.code
   return isInternal(error) ? 'bot/internal' : 'bot/refused'
 }
 
 export function install(rt) {
+  const nemoAgentUrl = classicAgentUrl(process.env.NEMO_CLASSIC_AGENT_URL)
   installBtw(rt)
   installSide(rt)
   const { ctx, state } = rt
@@ -125,6 +137,7 @@ export function install(rt) {
     permissions: rt.permissionCatalog?.() ?? null,
     modelsKey: modelsKey(),
     prefs: state.prefs,
+    ...(nemoAgentUrl === undefined ? {} : { nemoAgentUrl }),
     // Whether a Desktop window should serve Bot browser reads (see browser.js).
     browser: rt.browserEnabled,
     // False when config.memory turns memory off: no Memory row or panel.

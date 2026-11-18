@@ -708,6 +708,11 @@ export function apply(ctx) {
     surfaceMode: () => surface.getSnapshot().mode,
     setSurface: (mode) => {
       if (mode !== 'bot' && mode !== 'agent') return
+      const nemoAgentUrl = roster.getSnapshot().nemoAgentUrl
+      if (mode === 'agent' && nemoAgentUrl !== undefined) {
+        window.location.assign(nemoAgentUrl)
+        return
+      }
       // Already there: still worth the landing check — a cold start never calls
       // setSurface, so this is also how a stuck Bot surface recovers itself.
       if (surface.getSnapshot().mode === mode) {
