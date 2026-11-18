@@ -20,6 +20,18 @@ const CUA_BACKGROUND = new Set([
   'performSecondaryAction', 'typeText', 'paste', 'pressKey', 'sendKeyEvent', 'show', 'launchApp',
 ])
 
+// Some compatible model endpoints encode nested tool objects as JSON strings.
+// Decode once before policy classification and keep the provider's schema checks.
+export function normalizeCuaParams(args) {
+  if (typeof args?.params !== 'string') return
+  try {
+    const value = JSON.parse(args.params)
+    if (value !== null && typeof value === 'object' && !Array.isArray(value)) args.params = value
+  } catch {
+    // The provider reports invalid parameters without running the tool.
+  }
+}
+
 // The Cua Driver provider serves one tool per method as `cua_driver_native__<name>`.
 export const DRIVER_PREFIX = 'cua_driver_native__'
 const DRIVER_OBSERVE = new Set([

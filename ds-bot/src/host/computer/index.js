@@ -7,7 +7,7 @@ import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import { dshVersion } from '../diagnostics.js'
 import { LEGACY_EXECUTABLES, LEGACY_NAME } from '../legacy.mjs'
-import { classify, isComputerTool, levelAllows, LEVELS, DRIVER_GLOBAL, DRIVER_REFUSED } from './catalog.js'
+import { classify, isComputerTool, levelAllows, LEVELS, DRIVER_GLOBAL, DRIVER_REFUSED, normalizeCuaParams } from './catalog.js'
 import { createLeases } from './leases.js'
 import { prepareComputerHelper } from './mac-helper.js'
 import { REPLY_KIND } from '../constants.js'
@@ -767,6 +767,7 @@ export function install(rt) {
 
   // ---- The guard ----
   ctx.on('tools/pre-execute', async function computerGate(exec, next) {
+    if (exec.name === 'cua') normalizeCuaParams(exec.arguments)
     const call = classify(exec.name, exec.arguments)
     if (call === undefined) return next()
     await rt.load()

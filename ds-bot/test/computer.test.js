@@ -145,6 +145,11 @@ test('the guard refuses in order: switch, Bot, level, control, protected, consen
   await rt.computerEndpoint('set-level', { botId: 'w1', level: 'background' })
   assert.equal(await call('w1', 'cua', { method: 'click', params: {} }), 'allowed')
   assert.equal((await call('w1', 'cua', { method: 'activate', params: {} })).kind, 'deny')
+  const encodedRead = { method: 'getCapabilities', params: '{}' }
+  assert.equal(await call('w1', 'cua', encodedRead), 'allowed')
+  assert.deepEqual(encodedRead.params, {})
+  const encodedPointer = { method: 'mouseMove', params: '{"useSystemPointer":true}' }
+  assert.equal((await call('w1', 'cua', encodedPointer)).kind, 'deny')
   // foreground level allows it
   await rt.computerEndpoint('set-level', { botId: 'w1', level: 'foreground' })
   assert.equal(await call('w1', 'cua', { method: 'activate', params: {} }), 'allowed')
@@ -152,6 +157,9 @@ test('the guard refuses in order: switch, Bot, level, control, protected, consen
   const denied = await call('w1', 'cua', { method: 'getApp', params: { selector: 'DSH Computer Use' } })
   assert.equal(denied.kind, 'deny')
   assert.match(denied.reason, /protected/)
+  const encodedProtected = await call('w1', 'cua', { method: 'getApp', params: '{"selector":"DSH Computer Use"}' })
+  assert.equal(encodedProtected.kind, 'deny')
+  assert.match(encodedProtected.reason, /protected/)
   // another Bot holds the app lease: the refusal names it
   await rt.computerEndpoint('set-level', { botId: 'm1', level: 'background' })
   const [track] = ctx.listeners.get('tools/execute').filter(fn => fn.name === 'computerTrack')
