@@ -145,9 +145,9 @@ test('the guard refuses in order: switch, Bot, level, control, protected, consen
   await rt.computerEndpoint('set-level', { botId: 'w1', level: 'background' })
   assert.equal(await call('w1', 'cua', { method: 'click', params: {} }), 'allowed')
   assert.equal((await call('w1', 'cua', { method: 'activate', params: {} })).kind, 'deny')
-  const encodedRead = { method: 'getCapabilities', params: '{}' }
-  assert.equal(await call('w1', 'cua', encodedRead), 'allowed')
-  assert.deepEqual(encodedRead.params, {})
+  const encodedRead = { name: 'cua', arguments: Object.freeze({ method: 'getCapabilities', params: '{}' }), agent: { id: 'w1' } }
+  assert.equal(await gate(encodedRead, allow), 'allowed')
+  assert.deepEqual(encodedRead.arguments.params, {})
   const encodedPointer = { method: 'mouseMove', params: '{"useSystemPointer":true}' }
   assert.equal((await call('w1', 'cua', encodedPointer)).kind, 'deny')
   // foreground level allows it

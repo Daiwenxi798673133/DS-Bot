@@ -767,7 +767,7 @@ export function install(rt) {
 
   // ---- The guard ----
   ctx.on('tools/pre-execute', async function computerGate(exec, next) {
-    if (exec.name === 'cua') normalizeCuaParams(exec.arguments)
+    if (exec.name === 'cua') exec.arguments = normalizeCuaParams(exec.arguments)
     const call = classify(exec.name, exec.arguments)
     if (call === undefined) return next()
     await rt.load()

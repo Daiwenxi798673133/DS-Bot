@@ -23,13 +23,16 @@ const CUA_BACKGROUND = new Set([
 // Some compatible model endpoints encode nested tool objects as JSON strings.
 // Decode once before policy classification and keep the provider's schema checks.
 export function normalizeCuaParams(args) {
-  if (typeof args?.params !== 'string') return
+  if (typeof args?.params !== 'string') return args
   try {
     const value = JSON.parse(args.params)
-    if (value !== null && typeof value === 'object' && !Array.isArray(value)) args.params = value
+    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+      return Object.freeze({ ...args, params: Object.freeze(value) })
+    }
   } catch {
     // The provider reports invalid parameters without running the tool.
   }
+  return args
 }
 
 // The Cua Driver provider serves one tool per method as `cua_driver_native__<name>`.
